@@ -1,0 +1,176 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+
+/* =========
+   THEME LEO (May-like pastel)
+   ========= */
+:root {
+  --leo-ink: #0f2d2a;
+  --leo-muted: #6b7280;
+
+  --leo-bg-1: #f2e8ff; /* lilas */
+  --leo-bg-2: #fff1e7; /* pêche */
+  --leo-bg-3: #e8faf3; /* vert très clair */
+
+  --leo-card: rgba(255, 255, 255, 0.86);
+  --leo-border: rgba(17, 24, 39, 0.10);
+  --leo-shadow: 0 10px 30px rgba(15, 45, 42, 0.08);
+
+  --leo-brand: #0f3b36;
+  --leo-brand-2: #1f6f63;
+
+  --leo-radius: 26px;
+
+  /* Safe areas (iPhone notch / home indicator) */
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-left: env(safe-area-inset-left);
+  --safe-right: env(safe-area-inset-right);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--leo-ink);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+
+  /* Soft pastel background */
+  background:
+    radial-gradient(1200px 800px at 20% 0%, var(--leo-bg-1), transparent 70%),
+    radial-gradient(1200px 800px at 80% 10%, var(--leo-bg-2), transparent 70%),
+    radial-gradient(1200px 800px at 50% 100%, var(--leo-bg-3), transparent 70%),
+    #ffffff;
+}
+
+/* =========
+   Layout helpers
+   ========= */
+.container-app {
+  width: 100%;
+  max-width: 440px; /* iPhone Pro Max friendly */
+  margin: 0 auto;
+  padding-left: calc(16px + var(--safe-left));
+  padding-right: calc(16px + var(--safe-right));
+}
+
+/* =========
+   Typography
+   ========= */
+.h1,
+.h2 {
+  font-family: Fraunces, ui-serif, Georgia, serif;
+  letter-spacing: -0.02em;
+  color: var(--leo-ink);
+}
+
+.h1 {
+  font-size: 28px;
+  line-height: 1.05;
+  font-weight: 700;
+}
+
+.h2 {
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.muted {
+  color: var(--leo-muted);
+  font-size: 14px;
+}
+
+/* =========
+   Buttons / chips
+   ========= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--leo-border);
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--leo-ink);
+  box-shadow: 0 6px 18px rgba(15, 45, 42, 0.06);
+  font-weight: 600;
+}
+
+.btn-primary {
+  border-color: transparent;
+  background: var(--leo-brand);
+  color: white;
+  box-shadow: 0 10px 22px rgba(15, 59, 54, 0.22);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--leo-border);
+  background: rgba(255, 255, 255, 0.70);
+  color: var(--leo-ink);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--leo-border);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--leo-ink);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+  border-radius: 16px !important;
+}
+
+/* =========
+   Card base (used inside Card.jsx)
+   ========= */
+.leo-card {
+  border: 1px solid var(--leo-border);
+  border-radius: var(--leo-radius);
+  background: var(--leo-card);
+  box-shadow: var(--leo-shadow);
+  backdrop-filter: blur(10px);
+}
+
+/* Bottom nav safe area */
+.leo-bottom-safe {
+  padding-bottom: calc(10px + var(--safe-bottom));
+}
+
+/* ✅ Fix global : les chips/boutons “pill” restent toujours arrondis */
+.chip,
+.btn-ghost,
+.btn-primary {
+  border-radius: 9999px !important;
+}
+/* Hotspot "forme dent" (approximation propre, plus premium que cercle) */
+.hotspot-tooth {
+  border-radius: 12px; /* fallback */
+  clip-path: polygon(
+    35% 6%, 65% 6%,
+    80% 18%, 88% 38%,
+    82% 66%, 70% 85%,
+    55% 96%, 50% 100%,
+    45% 96%, 30% 85%,
+    18% 66%, 12% 38%,
+    20% 18%
+  );
+}

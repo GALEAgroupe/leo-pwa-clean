@@ -1,0 +1,73 @@
+[
+  {
+    "id": "t1",
+    "title": "Dent permanente expulsée (avulsion) — urgence maximale",
+    "severity": "high",
+    "what": "La rapidité et la conservation conditionnent le pronostic.",
+    "doNow": [
+      "Si possible : rincer très brièvement si sale (sans frotter), tenir la dent par la couronne.",
+      "Réimplanter immédiatement si vous savez faire, sinon conserver dans du lait / sérum physiologique / salive (joue) et consulter en URGENCE.",
+      "Objectif : prise en charge idéale < 60 minutes."
+    ],
+    "avoid": [
+      "Ne pas gratter la racine.",
+      "Ne pas laisser sécher la dent."
+    ],
+    "source": "ameli_trauma_iadt"
+  },
+  {
+    "id": "t2",
+    "title": "Dent de lait expulsée (avulsion) — ne pas réimplanter",
+    "severity": "high",
+    "what": "Risque d’abîmer la dent définitive sous-jacente.",
+    "doNow": [
+      "Compression si saignement.",
+      "Consulter rapidement (dans la journée)."
+    ],
+    "avoid": [
+      "Ne pas réimplanter une dent de lait."
+    ],
+    "source": "iadt_primary"
+  },
+  {
+    "id": "t3",
+    "title": "Dent cassée (fracture) — avec ou sans morceau retrouvé",
+    "severity": "medium",
+    "what": "Peut nécessiter collage/soin, parfois urgence si douleur pulpaire.",
+    "doNow": [
+      "Si vous retrouvez le fragment : le conserver dans sérum physiologique / eau.",
+      "Consulter rapidement (dans la journée si douleur)."
+    ],
+    "avoid": [
+      "Éviter de mâcher du côté atteint."
+    ],
+    "source": "ufsbd_trauma"
+  },
+  {
+    "id": "t4",
+    "title": "Dent déplacée / mobile (luxation) après choc",
+    "severity": "high",
+    "what": "Risque de nécrose / atteinte parodontale ; besoin d’évaluation rapide.",
+    "doNow": [
+      "Consulter rapidement (idéalement le jour même).",
+      "Alimentation molle, éviter de manipuler la dent."
+    ],
+    "avoid": [
+      "Ne pas tenter de remettre en place si vous n’êtes pas sûr."
+    ],
+    "source": "ameli_trauma_iadt"
+  },
+  {
+    "id": "t5",
+    "title": "Lèvre/gencive gonflée + suspicion dent “enfoncée” (intrusion)",
+    "severity": "high",
+    "what": "Peut toucher la dent définitive en formation (si dent de lait) ou nécessiter suivi strict (permanente).",
+    "doNow": [
+      "Consulter en urgence (dentaire / urgences)."
+    ],
+    "avoid": [
+      "Ne pas forcer l’occlusion."
+    ],
+    "source": "iadt_primary"
+  }
+]

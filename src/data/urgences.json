@@ -1,0 +1,77 @@
+[
+  {
+    "id": "u1",
+    "title": "Gonflement du visage, fièvre, difficulté à ouvrir la bouche / avaler",
+    "severity": "high",
+    "what": "Infection d’origine dentaire potentiellement grave.",
+    "doNow": [
+      "Consultez en URGENCE (dentiste/urgences).",
+      "Si gêne respiratoire, difficulté à avaler, altération de l’état général → appelez le 15 / 112."
+    ],
+    "avoid": [
+      "Ne pas percer ni comprimer un abcès.",
+      "Éviter la chaleur sur la joue (peut aggraver)."
+    ],
+    "source": "ameli_abces"
+  },
+  {
+    "id": "u2",
+    "title": "Abcès dentaire (douleur + boule sur la gencive) sans signes de gravité",
+    "severity": "medium",
+    "what": "Infection localisée qui nécessite un avis rapide.",
+    "doNow": [
+      "Prenez RDV chez le dentiste rapidement.",
+      "Antalgique adapté (paracétamol selon notice/avis médical).",
+      "Compresses froides si joue douloureuse."
+    ],
+    "avoid": [
+      "Ne pas percer soi-même.",
+      "Éviter aspirine sur la gencive (brûlures)."
+    ],
+    "source": "ameli_abces"
+  },
+  {
+    "id": "u3",
+    "title": "Mal de dent important (douleur qui réveille, pulsatile)",
+    "severity": "medium",
+    "what": "Caries / pulpite : nécessite un soin.",
+    "doNow": [
+      "RDV dentiste (idéalement sous 24–48h si douleur forte).",
+      "Hygiène douce + rinçage à l’eau tiède."
+    ],
+    "avoid": [
+      "Éviter l’auto-antibiotique.",
+      "Éviter chaleur locale."
+    ],
+    "source": "ameli_douleur"
+  },
+  {
+    "id": "u4",
+    "title": "Saignement dans la bouche après choc / morsure / petite plaie",
+    "severity": "low",
+    "what": "Plaie des tissus mous fréquente chez l’enfant.",
+    "doNow": [
+      "Compression douce avec compresse propre 5–10 min.",
+      "Froid (glaçon dans un linge) pour diminuer gonflement.",
+      "Si plaie large/écartée ou saignement persistant → consulter."
+    ],
+    "avoid": [
+      "Ne pas frotter fort la plaie."
+    ],
+    "source": "ufsbd_trauma"
+  },
+  {
+    "id": "u5",
+    "title": "Appareil orthodontique qui blesse (fil, bracket)",
+    "severity": "low",
+    "what": "Irritation mécanique.",
+    "doNow": [
+      "Cire orthodontique si disponible.",
+      "RDV ortho si douleur importante ou fil qui pique."
+    ],
+    "avoid": [
+      "Éviter de couper soi-même au ras de la gencive."
+    ],
+    "source": "general"
+  }
+]

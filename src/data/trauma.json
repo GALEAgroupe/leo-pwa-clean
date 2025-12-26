@@ -1,0 +1,18 @@
+[
+  {
+    "id":"avulsion-def",
+    "title":"Dent définitive expulsée",
+    "type":"Avulsion (dent définitive)",
+    "emergencyLevel":"URGENT",
+    "steps":["Reste calme.","Prends la dent par la couronne.","Rince vite si sale (sans frotter).","Contacte un dentiste en urgence."],
+    "doNot":["Ne gratte pas la racine.","Ne laisse pas la dent sécher."]
+  },
+  {
+    "id":"fracture",
+    "title":"Dent cassée / morceau",
+    "type":"Fracture",
+    "emergencyLevel":"RAPIDE",
+    "steps":["Rince la bouche.","Conserve le morceau si possible.","Prends une photo.","Contacte ton dentiste rapidement."],
+    "doNot":["Évite les aliments durs.","Ne manipule pas la dent."]
+  }
+]
