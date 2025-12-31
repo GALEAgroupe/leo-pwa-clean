@@ -8,6 +8,7 @@ import {
   addMonths,
   startOfDay,
   isBefore,
+  isAfter,
   isSameWeek,
 } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -17,7 +18,7 @@ import ChildSwitcher from "../components/ChildSwitcher.jsx";
 import DayEditModal from "../components/DayEditModal.jsx";
 import TeethTimelineCard from "../components/TeethTimelineCard.jsx";
 import { AppCtx } from "../app/AppShell.jsx";
-import { applyRewardsFromLogTransition } from "../lib/rewards.js";
+import { applyGamiFromLogTransition } from "../lib/gamification.js";
 
 /** ---------------- Helpers logs ---------------- **/
 function dateKey(d) {
@@ -130,16 +131,32 @@ export default function Calendar() {
   const { state, setState, activeChild } = useContext(AppCtx);
   const child = activeChild();
 
-  const [anchor, setAnchor] = useState(() => new Date());
+  const today0 = startOfDay(new Date());
+  const minDate = subDays(today0, 7);
+  const minWeekStart = startOfWeek(minDate, { weekStartsOn: 1 });
+  const maxWeekStart = startOfWeek(today0, { weekStartsOn: 1 });
+
+  const clampAnchor = (d) => {
+    const w = startOfWeek(d, { weekStartsOn: 1 });
+    if (isBefore(w, minWeekStart)) return minWeekStart;
+    if (isAfter(w, maxWeekStart)) return maxWeekStart;
+    return w;
+  };
+
+  const [anchor, setAnchor] = useState(() => clampAnchor(today0));
   const [selected, setSelected] = useState(null);
 
   const logsForChild = state.logs?.[child?.id] || {};
 
+  const anchorWeekStart = useMemo(() => startOfWeek(anchor, { weekStartsOn: 1 }), [anchor]);
+  const canPrev = anchorWeekStart.getTime() > minWeekStart.getTime();
+  const canNext = anchorWeekStart.getTime() < maxWeekStart.getTime();
+
   /** ✅ 1 semaine (7 jours) */
   const days = useMemo(() => {
-    const start = startOfWeek(anchor, { weekStartsOn: 1 });
+    const start = anchorWeekStart;
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  }, [anchor]);
+  }, [anchorWeekStart]);
 
   const setLog = (d, value) => {
     const k = dateKey(d);
@@ -158,8 +175,8 @@ export default function Calendar() {
         },
       };
 
-      // ✅ Récompenses (si tranche 6–10, la fonction gère le “gate”)
-      return applyRewardsFromLogTransition({
+      // ✅ Gamification (si tranche 6–10, la fonction gère le “gate”)
+      return applyGamiFromLogTransition({
         state: nextState,
         child,
         childId,
@@ -262,12 +279,14 @@ export default function Calendar() {
         const log = normalizeDayLog(logsForChild[k]);
         const complete = log.am && log.pm;
         const today = isToday(d);
+        const allowed = !isAfter(startOfDay(d), today0) && !isBefore(startOfDay(d), minDate);
 
         return (
           <button
             key={k}
             type="button"
-            onClick={() => setSelected(d)}
+            onClick={() => (allowed ? setSelected(d) : null)}
+            disabled={!allowed}
             className={[
               "rounded-2xl border transition overflow-hidden",
               "p-1 sm:p-2",
@@ -275,6 +294,7 @@ export default function Calendar() {
               "text-center",
               complete ? "border-emerald-300 bg-emerald-50" : "border-gray-200 bg-white",
               today ? "ring-2 ring-gray-900/10" : "",
+              !allowed ? "opacity-40 cursor-not-allowed" : "",
             ].join(" ")}
           >
             <div className="text-base sm:text-sm font-extrabold">{format(d, "d")}</div>
@@ -303,13 +323,13 @@ export default function Calendar() {
         title="Calendrier"
         right={
           <div className="flex flex-wrap items-center gap-2">
-            <button className="btn-ghost" type="button" onClick={() => setAnchor((d) => subDays(d, 7))}>
+            <button className="btn-ghost" type="button" disabled={!canPrev} onClick={() => setAnchor((d) => clampAnchor(subDays(d, 7)))}>
               ←
             </button>
-            <button className="btn-ghost" type="button" onClick={() => setAnchor(new Date())}>
+            <button className="btn-ghost" type="button" onClick={() => setAnchor(maxWeekStart)}>
               Aujourd’hui
             </button>
-            <button className="btn-ghost" type="button" onClick={() => setAnchor((d) => addDays(d, 7))}>
+            <button className="btn-ghost" type="button" disabled={!canNext} onClick={() => setAnchor((d) => clampAnchor(addDays(d, 7)))}>
               →
             </button>
           </div>

@@ -48,7 +48,7 @@ export default function AppShell() {
   const getTitle = (pathname) => {
     if (pathname === "/") return "Aujourd’hui";
     if (pathname.startsWith("/calendar")) return "Calendrier";
-    if (pathname.startsWith("/videos")) return "Vidéos";
+    if (pathname.startsWith("/rewards")) return "Récompenses";
     if (pathname.startsWith("/articles")) return "Articles";
     if (pathname.startsWith("/urgence")) return "Urgences";
     if (pathname.startsWith("/profile")) return "Profil";

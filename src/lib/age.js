@@ -1,4 +1,5 @@
 // src/lib/age.js
+
 export function parseDob(dob) {
   if (!dob) return null;
   const d = new Date(dob);
@@ -14,8 +15,19 @@ export function ageInMonths(dob, now = new Date()) {
   return Math.max(0, months);
 }
 
+function childDob(child) {
+  return (
+    child?.dob ||
+    child?.birthDate ||
+    child?.birthdate ||
+    child?.birth_date ||
+    child?.birthDateISO ||
+    null
+  );
+}
+
 export function getAgeLabel(child) {
-  const m = ageInMonths(child?.dob);
+  const m = ageInMonths(childDob(child));
   if (m == null) return "Âge inconnu";
   const years = Math.floor(m / 12);
   const rem = m % 12;
@@ -25,7 +37,7 @@ export function getAgeLabel(child) {
 }
 
 export function getAgeBand(child) {
-  const m = ageInMonths(child?.dob);
+  const m = ageInMonths(childDob(child));
   if (m == null) return "3-6"; // fallback
   if (m < 36) return "0-3";
   if (m < 72) return "3-6";

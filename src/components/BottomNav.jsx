@@ -17,11 +17,14 @@ function Icon({ name }) {
           <rect x="4" y="6" width="16" height="15" rx="2" />
         </svg>
       );
-    case "play":
+    case "gift":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M9 8l8 4-8 4V8Z" fill="currentColor" stroke="none" />
-          <circle cx="12" cy="12" r="9" />
+          <path d="M20 12v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9" />
+          <path d="M2 7h20v5H2z" />
+          <path d="M12 22V7" />
+          <path d="M12 7c0-3 2-4 4-4 1.7 0 3 1.3 3 3 0 1.1-.6 2-1.5 2H12Z" />
+          <path d="M12 7c0-3-2-4-4-4-1.7 0-3 1.3-3 3 0 1.1.6 2 1.5 2H12Z" />
         </svg>
       );
     case "spark":
@@ -67,14 +70,16 @@ function Item({ to, icon, label }) {
 
 export default function BottomNav() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-gray-100 bg-white/95 backdrop-blur">
-      <div className="container-app py-2 flex items-center justify-between">
-        <Item to="/" icon="home" label="Aujourd’hui" />
-        <Item to="/calendar" icon="cal" label="Calendrier" />
-        <Item to="/videos" icon="play" label="Vidéos" />
-        <Item to="/articles" icon="spark" label="Articles" />
-        <Item to="/urgence" icon="shield" label="Urgence" />
-        <Item to="/profile" icon="user" label="Profil" />
+    <nav className="bottom-nav">
+      <div className="container-app">
+        <div className="bottom-nav-pill">
+          <Item to="/" icon="home" label="Aujourd’hui" />
+          <Item to="/calendar" icon="cal" label="Calendrier" />
+          <Item to="/rewards" icon="gift" label="Récompenses" />
+          <Item to="/articles" icon="spark" label="Articles" />
+          <Item to="/urgence" icon="shield" label="Urgence" />
+          <Item to="/profile" icon="user" label="Profil" />
+        </div>
       </div>
     </nav>
   );

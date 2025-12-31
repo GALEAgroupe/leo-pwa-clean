@@ -2,14 +2,23 @@ import { format, subDays, parseISO } from "date-fns";
 import { ageInMonths } from "./age.js";
 
 // -------------------------
-// Config (6–10 ans)
+// Config (récompenses)
 // -------------------------
+// ✅ Activation demandée : dès 3 ans.
+// On garde un “cap” à 12 ans pour rester cohérent avec la cible kids.
 
-export function isAge6to10(child) {
-  const dob = child?.dob || child?.birthDate || child?.birthdate || child?.birth_date || null;
+export function isRewardsEnabled(child) {
+  const dob =
+    child?.dob || child?.birthDate || child?.birthdate || child?.birth_date || null;
   const m = ageInMonths(dob);
   if (m == null) return false;
-  return m >= 72 && m < 120; // 6y -> <10y
+  return m >= 36 && m < 144; // 3y -> <12y
+}
+
+// Back-compat (ancienne API) — conservée pour éviter de casser des imports.
+// NB: le nom n'est plus “vrai”, mais le comportement est correct pour le produit.
+export function isAge6to10(child) {
+  return isRewardsEnabled(child);
 }
 
 export const SHOP_ITEMS = [
@@ -17,7 +26,7 @@ export const SHOP_ITEMS = [
     id: "item_5",
     cost: 5,
     title: "Badge / objet",
-    subtitle: "Débloque un badge ou un petit objet (avatar, sticker…)",
+    subtitle: "Débloque un badge “pin” (avatar, sticker…)",
   },
   {
     id: "power_15",
@@ -33,10 +42,33 @@ export const SHOP_ITEMS = [
   },
 ];
 
+// Badges (IDs stables)
+export const BADGES = {
+  streak_3: { label: "Série 3 jours", pinText: "3J", pinVariant: "gold" },
+  streak_7: { label: "Série 7 jours", pinText: "7J", pinVariant: "gold" },
+  streak_14: { label: "Série 14 jours", pinText: "14J", pinVariant: "gold" },
+
+  pin_gem: { label: "Pin : Gemme", pinText: "GEM" },
+  pin_planet: { label: "Pin : Planète", pinText: "ORB" },
+  pin_crown: { label: "Pin : Couronne", pinText: "CROWN" },
+  pin_star: { label: "Pin : Étoile", pinText: "STAR" },
+  pin_rocket: { label: "Pin : Fusée", pinText: "ROCK" },
+  pin_shield: { label: "Pin : Bouclier", pinText: "SAFE" },
+};
+
+const COSMETIC_PINS = [
+  "pin_gem",
+  "pin_planet",
+  "pin_crown",
+  "pin_star",
+  "pin_rocket",
+  "pin_shield",
+];
+
 const MILESTONES = {
-  3: { bonus: 2, badge: "Série 3 jours" },
-  7: { bonus: 5, badge: "Série 7 jours" },
-  14: { bonus: 10, badge: "Série 14 jours" },
+  3: { bonus: 2, badgeId: "streak_3" },
+  7: { bonus: 5, badgeId: "streak_7" },
+  14: { bonus: 10, badgeId: "streak_14" },
 };
 
 function todayKey() {
@@ -47,13 +79,12 @@ function defaultRewards() {
   return {
     tokens: 0,
     badges: [],
-    unlocked: [],
     redemptions: [],
     // flags pour éviter de “farmer” en cliquant on/off
     awarded: {
       // [dateKey]: { am:true, pm:true, day:true }
     },
-    // streak et milestones (pas obligatoire, mais pratique à afficher)
+    // streak et milestones
     streak: 0,
     milestonesAwarded: {},
     completedDays: {},
@@ -63,6 +94,25 @@ function defaultRewards() {
 export function getRewardsForChild(state, childId) {
   const r = state?.rewards?.[childId];
   return r ? { ...defaultRewards(), ...r } : defaultRewards();
+}
+
+export function badgeLabel(badgeId) {
+  return BADGES?.[badgeId]?.label || badgeId;
+}
+
+export function badgesToPins(badges = [], max = 3) {
+  const uniq = Array.from(new Set(Array.isArray(badges) ? badges : [])).filter(Boolean);
+  // On prend les derniers d’abord (plus “collection”)
+  const ordered = uniq.slice().reverse();
+  const pins = [];
+  for (const id of ordered) {
+    const meta = BADGES[id];
+    if (!meta) continue;
+    if (!meta.pinText) continue;
+    pins.push({ id, text: meta.pinText, variant: meta.pinVariant || "dark" });
+    if (pins.length >= max) break;
+  }
+  return pins;
 }
 
 export function computeStreak(completedDays, endKey = todayKey()) {
@@ -77,16 +127,9 @@ export function computeStreak(completedDays, endKey = todayKey()) {
   return streak;
 }
 
-export function applyRewardsFromLogTransition({
-  state,
-  child,
-  childId,
-  dateKey,
-  prevLog,
-  nextLog,
-}) {
+export function applyRewardsFromLogTransition({ state, child, childId, dateKey, prevLog, nextLog }) {
   if (!childId || !child) return state;
-  if (!isAge6to10(child)) return state;
+  if (!isRewardsEnabled(child)) return state;
 
   const r0 = getRewardsForChild(state, childId);
   const awarded = { ...(r0.awarded || {}) };
@@ -113,11 +156,11 @@ export function applyRewardsFromLogTransition({
 
   awarded[dateKey] = dayFlags;
 
-  // Enregistre les jours complets (pour le streak) dès qu’un jour devient complet
+  // Enregistre les jours complets (pour le streak)
   const completedDays = { ...(r0.completedDays || {}) };
   if (dayComplete) completedDays[dateKey] = true;
 
-  // Recalcule le streak “aujourd’hui” à chaque update
+  // Recalcule le streak “aujourd’hui”
   const streakNow = computeStreak(completedDays, todayKey());
 
   // Milestones: 3 / 7 / 14 jours -> badge + bonus tokens (une seule fois)
@@ -128,7 +171,7 @@ export function applyRewardsFromLogTransition({
   if (ms && !milestonesAwarded[String(streakNow)]) {
     milestonesAwarded[String(streakNow)] = true;
     tokens += ms.bonus;
-    if (!badges.includes(ms.badge)) badges.push(ms.badge);
+    if (!badges.includes(ms.badgeId)) badges.push(ms.badgeId);
   }
 
   const nextRewards = {
@@ -150,9 +193,15 @@ export function applyRewardsFromLogTransition({
   };
 }
 
+function pickRandom(arr) {
+  if (!arr.length) return null;
+  const i = Math.floor(Math.random() * arr.length);
+  return arr[i];
+}
+
 export function redeemShopItem({ state, child, childId, itemId }) {
   if (!childId || !child) return state;
-  if (!isAge6to10(child)) return state;
+  if (!isRewardsEnabled(child)) return state;
 
   const item = SHOP_ITEMS.find((x) => x.id === itemId);
   if (!item) return state;
@@ -170,10 +219,19 @@ export function redeemShopItem({ state, child, childId, itemId }) {
     cost: item.cost,
   });
 
+  let badges = Array.isArray(r0.badges) ? [...r0.badges] : [];
+
+  // ✅ Gamification assumée : item_5 débloque un pin cosmétique
+  if (item.id === "item_5") {
+    const candidate = pickRandom(COSMETIC_PINS);
+    if (candidate && !badges.includes(candidate)) badges.push(candidate);
+  }
+
   const nextRewards = {
     ...r0,
     tokens: tokens - item.cost,
     redemptions,
+    badges,
   };
 
   return {

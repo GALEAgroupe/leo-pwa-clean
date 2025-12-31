@@ -1,6 +1,6 @@
 import Today from "../pages/Today.jsx";
 import Calendar from "../pages/Calendar.jsx";
-import Videos from "../pages/Videos.jsx";
+import Rewards from "../pages/Rewards.jsx";
 import Articles from "../pages/Articles.jsx";
 import Profile from "../pages/Profile.jsx";
 import Login from "../pages/Login.jsx";
@@ -9,7 +9,7 @@ import UrgenceTrauma from "../pages/UrgenceTrauma.jsx";
 export const routes = [
   { path: "/", element: <Today /> },
   { path: "/calendar", element: <Calendar /> },
-  { path: "/videos", element: <Videos /> },
+  { path: "/rewards", element: <Rewards /> },
   { path: "/articles", element: <Articles /> },
   { path: "/articles/:id", element: <Articles /> },
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const MIN_SEC = 15;
-const MAX_SEC = 120; // ✅ 2 min max
+const MAX_SEC = 120; // 2 min
 const STEP_SEC = 1;
 
 function clamp(n, a, b) {
@@ -15,33 +15,107 @@ function fmt(sec) {
   return `${mm}:${ss}`;
 }
 
+function ToothMascot({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 120 120"
+      className={className}
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="toothG" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="rgba(255,255,255,1)" />
+          <stop offset="1" stopColor="rgba(241,245,249,1)" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M60 18c18 0 34 12 34 30 0 10-4 19-8 26-5 10-6 28-10 35-3 6-12 7-16-2-2-4-3-10-4-16-1 6-2 12-4 16-4 9-13 8-16 2-4-7-5-25-10-35-4-7-8-16-8-26 0-18 16-30 34-30z"
+        fill="url(#toothG)"
+        stroke="rgba(15,23,42,0.10)"
+        strokeWidth="2"
+      />
+      <circle cx="44" cy="58" r="4" fill="rgba(15,23,42,0.65)" />
+      <circle cx="76" cy="58" r="4" fill="rgba(15,23,42,0.65)" />
+      <path d="M48 74c8 8 16 8 24 0" fill="none" stroke="rgba(15,23,42,0.55)" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="34" cy="66" r="6" fill="rgba(244,63,94,0.18)" />
+      <circle cx="86" cy="66" r="6" fill="rgba(244,63,94,0.18)" />
+    </svg>
+  );
+}
+
 /**
- * Props attendues (adapte si besoin) :
+ * Props:
  * - open: boolean
  * - onClose: () => void
  * - videos: [{ id, title, url, mood?, durationLabel? }]
+ * - initialSeconds?: number
+ * - onSaveSeconds?: (sec:number) => void
+ * - selectedVideoId?: string|null
+ * - onSelectVideo?: (id:string|null) => void
+ *
+ * Compat legacy:
+ * - defaultSeconds?: number
  */
 export default function BrushingTimerModal({
   open,
   onClose,
   videos = [],
+  initialSeconds,
+  onSaveSeconds,
+  selectedVideoId,
+  onSelectVideo,
+  // ✅ Step 2: called once when the timer reaches 0 naturally
+  onComplete,
   defaultSeconds = 120,
 }) {
-  const [seconds, setSeconds] = useState(clamp(defaultSeconds, MIN_SEC, MAX_SEC));
-  const [selectedVideoId, setSelectedVideoId] = useState(videos?.[0]?.id ?? null);
+  const initSec = clamp(
+    typeof initialSeconds === "number" ? initialSeconds : defaultSeconds,
+    MIN_SEC,
+    MAX_SEC
+  );
+
+  const [seconds, setSeconds] = useState(initSec);
+  const [localVideoId, setLocalVideoId] = useState(videos?.[0]?.id ?? null);
+
+  const effectiveVideoId = selectedVideoId ?? localVideoId;
 
   const [running, setRunning] = useState(false);
   const [endAt, setEndAt] = useState(null);
   const [remaining, setRemaining] = useState(seconds);
-
   const [showVideo, setShowVideo] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
 
   const videoRef = useRef(null);
   const tickRef = useRef(null);
 
+  // ✅ completion guards (avoid double-calls on iOS)
+  const completedRef = useRef(false);
+  const startedSecondsRef = useRef(initSec);
+  const startedVideoIdRef = useRef(null);
+
+  // Reset when modal opens
+  useEffect(() => {
+    if (!open) return;
+    setSeconds(initSec);
+    setRemaining(initSec);
+
+    const nextId =
+      (selectedVideoId ?? null) ||
+      (videos?.[0]?.id ?? null);
+    setLocalVideoId(nextId);
+
+    setRunning(false);
+    setEndAt(null);
+    setShowVideo(false);
+
+    completedRef.current = false;
+    startedSecondsRef.current = initSec;
+    startedVideoIdRef.current = (selectedVideoId ?? null) || (videos?.[0]?.id ?? null);
+  }, [open, initSec, selectedVideoId, videos]);
+
   const selectedVideo = useMemo(
-    () => videos.find((v) => v.id === selectedVideoId) || null,
-    [videos, selectedVideoId]
+    () => videos.find((v) => v.id === effectiveVideoId) || null,
+    [videos, effectiveVideoId]
   );
 
   const pct = useMemo(() => {
@@ -65,7 +139,7 @@ export default function BrushingTimerModal({
       setRemaining(left);
 
       if (left <= 0) {
-        stopAll();
+        stopAll(false, true);
       }
     }, 200);
 
@@ -76,15 +150,7 @@ export default function BrushingTimerModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, endAt]);
 
-  // cleanup on close
-  useEffect(() => {
-    if (!open) {
-      stopAll(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  const stopAll = (silent = false) => {
+  const stopAll = (silent = false, didComplete = false) => {
     setRunning(false);
     setEndAt(null);
     setRemaining((r) => (silent ? r : 0));
@@ -100,6 +166,32 @@ export default function BrushingTimerModal({
       } catch {}
     }
     if (!silent) setShowVideo(false);
+
+    if (didComplete && !silent) {
+      setCelebrate(true);
+      window.setTimeout(() => setCelebrate(false), 1600);
+    }
+
+    // petite célébration visuelle
+    if (didComplete) {
+      setCelebrate(true);
+      window.setTimeout(() => setCelebrate(false), 1600);
+    }
+
+    // ✅ notify completion once
+    if (didComplete && typeof onComplete === "function" && !completedRef.current) {
+      completedRef.current = true;
+      try {
+        onComplete({
+          seconds: startedSecondsRef.current,
+          targetSeconds: startedSecondsRef.current,
+          videoId: startedVideoIdRef.current,
+          finishedAt: new Date().toISOString(),
+        });
+      } catch {
+        // noop
+      }
+    }
   };
 
   const reset = () => {
@@ -108,47 +200,69 @@ export default function BrushingTimerModal({
     setShowVideo(false);
   };
 
+  const persistSettings = () => {
+    const sec = clamp(seconds, MIN_SEC, MAX_SEC);
+    if (typeof onSaveSeconds === "function") onSaveSeconds(sec);
+    if (typeof onSelectVideo === "function") onSelectVideo(effectiveVideoId ?? null);
+  };
+
+  const closeAndSave = () => {
+    persistSettings();
+    stopAll(true);
+    onClose?.();
+  };
+
   const startTimerOnly = () => {
     const dur = clamp(seconds, MIN_SEC, MAX_SEC);
+    completedRef.current = false;
+    startedSecondsRef.current = dur;
+    startedVideoIdRef.current = effectiveVideoId ?? null;
     setRemaining(dur);
     setEndAt(Date.now() + dur * 1000);
     setRunning(true);
     setShowVideo(false);
+    persistSettings();
   };
 
   /**
-   * ✅ Important iPhone:
+   * Important iPhone:
    * - play() doit être appelé DANS le handler du click utilisateur
-   * - le <video> doit déjà être monté (on le garde monté et on cache via CSS)
+   * - le <video> doit déjà être monté
    */
   const startWithVideo = async () => {
     const dur = clamp(seconds, MIN_SEC, MAX_SEC);
+    completedRef.current = false;
+    startedSecondsRef.current = dur;
+    startedVideoIdRef.current = effectiveVideoId ?? null;
     setRemaining(dur);
     setEndAt(Date.now() + dur * 1000);
     setRunning(true);
     setShowVideo(true);
+    persistSettings();
 
     const v = videoRef.current;
     if (v && selectedVideo?.url) {
       try {
-        // force reload if url changed
         if (v.src !== selectedVideo.url) v.src = selectedVideo.url;
-
         v.currentTime = 0;
-
-        // ⚠️ play() must happen here (user gesture)
         const p = v.play();
         if (p && typeof p.then === "function") await p;
-      } catch (e) {
-        // Si Safari bloque, on laisse quand même le timer démarrer
-        // et l’utilisateur pourra appuyer sur la vidéo.
-        // console.log(e);
+      } catch {
+        // Safari peut bloquer; timer reste OK
       }
     }
   };
 
   const dec15 = () => setSeconds((s) => clamp(s - 15, MIN_SEC, MAX_SEC));
   const inc15 = () => setSeconds((s) => clamp(s + 15, MIN_SEC, MAX_SEC));
+
+  const setVideoId = (id) => {
+    if (typeof onSelectVideo === "function") {
+      onSelectVideo(id);
+    } else {
+      setLocalVideoId(id);
+    }
+  };
 
   if (!open) return null;
 
@@ -157,164 +271,200 @@ export default function BrushingTimerModal({
       {/* overlay */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/30"
-        onClick={onClose}
+        className="absolute inset-0 bg-black/35"
+        onClick={closeAndSave}
         aria-label="Fermer"
       />
 
-      <div className="relative w-[min(920px,94vw)] max-h-[92vh] overflow-auto rounded-[28px] border border-gray-200 bg-white/90 backdrop-blur p-5 sm:p-6 shadow-xl">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="font-serif text-2xl font-bold text-[#0b2b22]">Timer brossage</div>
-            <div className="text-gray-600">Durée + vidéo (optionnel)</div>
+      <div className="leo-sheet leo-sheet--timer" role="dialog" aria-modal="true">
+        {/* Header fun */}
+        <div className="leo-sheet-header leo-sheet-header--timer">
+          <div className="leo-bubbles" aria-hidden>
+            {Array.from({ length: 10 }).map((_, i) => (
+              <span key={i} className="leo-bubble" style={{ "--i": i }} />
+            ))}
           </div>
-          <button className="btn-ghost" type="button" onClick={onClose}>
-            Fermer
-          </button>
+
+          <div className="leo-sheet-header-row">
+            <div className="min-w-0">
+              <div className="leo-sheet-title">Timer brossage</div>
+              <div className="leo-sheet-sub">2 minutes = super sourire ✨</div>
+            </div>
+            <div className="flex gap-2">
+              <button className="btn-primary" type="button" onClick={persistSettings}>
+                Enregistrer
+              </button>
+              <button className="btn-ghost" type="button" onClick={closeAndSave}>
+                Fermer
+              </button>
+            </div>
+          </div>
+
+          <div className="leo-timer-hero">
+            {celebrate ? (
+              <div className="leo-confetti" aria-hidden>
+                {Array.from({ length: 18 }).map((_, i) => (
+                  <span key={i} className="leo-confetti-bit" style={{ "--i": i }} />
+                ))}
+              </div>
+            ) : null}
+            <div className="leo-timer-sticker leo-timer-sticker--left" aria-hidden>
+              🪥
+            </div>
+            <div className="leo-timer-sticker leo-timer-sticker--right" aria-hidden>
+              🫧
+            </div>
+
+            <div className="leo-timer-ring leo-timer-ring--lg" aria-hidden>
+              <div className="leo-timer-ring-inner">
+                <ToothMascot className="leo-tooth-svg" />
+                <div className="leo-timer-ring-time tabular-nums">{fmt(running ? remaining : seconds)}</div>
+                <div className="leo-timer-ring-sub">{running ? "On brosse !" : "Prêt ?"}</div>
+              </div>
+            </div>
+
+            <div className="leo-timer-hero-chips">
+              <span className="chip">⏱ {fmt(seconds)}</span>
+              <span className="chip">🎬 {selectedVideo?.title ? selectedVideo.title : "Sans vidéo"}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Durée */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between">
-            <div className="font-semibold text-[#0b2b22]">Durée</div>
-            <span className="rounded-full border border-gray-200 bg-white px-3 py-1 font-semibold">
-              {fmt(seconds)}
-            </span>
-          </div>
+        {/* Body */}
+        <div className="leo-sheet-body">
+          {/* Durée */}
+          <div className="leo-card-inner leo-section">
+            <div className="flex items-center justify-between">
+              <div className="leo-kicker">DURÉE</div>
+              <span className="chip">{fmt(seconds)}</span>
+            </div>
 
-          <div className="mt-3">
-            <input
-              type="range"
-              min={MIN_SEC}
-              max={MAX_SEC}
-              step={STEP_SEC}
-              value={seconds}
-              onChange={(e) => setSeconds(clamp(Number(e.target.value), MIN_SEC, MAX_SEC))}
-              className="leo-range"
-              style={{ "--p": `${pct}%` }}
-              aria-label="Durée brossage"
-            />
-            <div className="mt-3 flex items-center gap-3">
-              <button className="btn-ghost" type="button" onClick={dec15}>
-                − 15s
-              </button>
-              <button className="btn-ghost" type="button" onClick={inc15}>
-                + 15s
-              </button>
+            <div className="mt-3">
+              <input
+                type="range"
+                min={MIN_SEC}
+                max={MAX_SEC}
+                step={STEP_SEC}
+                value={seconds}
+                onChange={(e) => setSeconds(clamp(Number(e.target.value), MIN_SEC, MAX_SEC))}
+                className="leo-range leo-range--fun"
+                style={{ "--p": `${pct}%` }}
+                aria-label="Durée brossage"
+              />
 
-              <div className="ml-auto flex items-center gap-2">
-                {!running ? (
-                  <button className="btn-primary" type="button" onClick={startTimerOnly}>
-                    Démarrer
-                  </button>
-                ) : (
-                  <button className="btn-primary" type="button" onClick={() => stopAll()}>
-                    Stop
-                  </button>
-                )}
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                <button className="btn-ghost" type="button" onClick={dec15} disabled={running}>
+                  − 15s
+                </button>
+                <button className="btn-ghost" type="button" onClick={inc15} disabled={running}>
+                  + 15s
+                </button>
                 <button className="btn-ghost" type="button" onClick={reset}>
                   Reset
                 </button>
-              </div>
-            </div>
 
-            {/* Affichage chrono */}
-            <div className="mt-3 rounded-2xl border border-gray-200 bg-white/70 p-3 flex items-center justify-between">
-              <div className="text-gray-600">Temps restant</div>
-              <div className="text-xl font-extrabold text-[#0b2b22] tabular-nums">
-                {fmt(running ? remaining : seconds)}
+                <div className="ml-auto flex items-center gap-2">
+                  <span className="chip">⏳ {fmt(running ? remaining : seconds)}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Video */}
-        <div className="mt-6 border-t border-gray-200 pt-6">
-          <div className="flex items-center justify-between">
-            <div className="font-semibold text-[#0b2b22]">Vidéo</div>
-            <span className="rounded-full border border-gray-200 bg-white px-3 py-1 font-semibold">
-              Optionnel
-            </span>
-          </div>
+          {/* Vidéo */}
+          <div className="leo-card-inner leo-section mt-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="leo-kicker">VIDÉO (OPTIONNEL)</div>
+                <div className="leo-title" style={{ fontSize: 16 }}>Choisir une vidéo</div>
+              </div>
+              <span className="chip">🎬</span>
+            </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {/* Liste vidéos (tu peux garder ton design si tu en as déjà un) */}
-            <div className="rounded-3xl border border-gray-200 bg-white/70 p-4">
-              <div className="text-sm font-semibold mb-2">Choisir une vidéo</div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
                 {videos.length === 0 ? (
-                  <div className="text-gray-600 text-sm">Aucune vidéo configurée.</div>
+                  <div className="muted">Aucune vidéo configurée.</div>
                 ) : (
                   videos.map((v) => {
-                    const active = v.id === selectedVideoId;
+                    const active = v.id === effectiveVideoId;
                     return (
                       <button
                         key={v.id}
                         type="button"
-                        onClick={() => setSelectedVideoId(v.id)}
+                        onClick={() => setVideoId(v.id)}
                         className={[
-                          "w-full text-left rounded-2xl border px-3 py-3 transition",
-                          active
-                            ? "border-emerald-300 bg-emerald-50"
-                            : "border-gray-200 bg-white",
+                          "leo-video-pill",
+                          active ? "is-on" : "",
                         ].join(" ")}
                       >
-                        <div className="font-semibold">{v.title}</div>
-                        <div className="text-sm text-gray-600">
+                        <div className="leo-video-pill-title">{v.title}</div>
+                        <div className="leo-video-pill-sub">
                           {v.mood ? v.mood : "Calme"} • {v.durationLabel ? v.durationLabel : "2 min"}
                         </div>
                       </button>
                     );
                   })
                 )}
-              </div>
-            </div>
-
-            {/* Preview vidéo (toujours monté, juste caché) */}
-            <div className="rounded-3xl border border-gray-200 bg-white/70 p-4">
-              <div className="text-sm font-semibold mb-2">Aperçu</div>
-
-              <div className={showVideo ? "" : "hidden"}>
-                <video
-                  ref={videoRef}
-                  src={selectedVideo?.url || ""}
-                  preload="auto"
-                  playsInline
-                  controls
-                  className="w-full rounded-2xl border border-gray-200 bg-black"
-                />
-                <div className="text-xs text-gray-600 mt-2">
-                  Sur iPhone, la lecture doit être déclenchée par un clic (c’est le cas du bouton ci-dessous).
-                </div>
+                <button type="button" className="btn-ghost" onClick={() => setVideoId(null)}>
+                  Sans vidéo
+                </button>
               </div>
 
-              {!showVideo ? (
-                <div className="text-gray-600 text-sm">
-                  Appuie sur “Démarrer (avec vidéo)” pour lancer la vidéo + le timer ensemble.
-                </div>
-              ) : null}
+              <div className="leo-video-preview">
+                <div className="leo-kicker">APERÇU</div>
+                {showVideo ? (
+                  <>
+                    <video
+                      ref={videoRef}
+                      src={selectedVideo?.url || ""}
+                      preload="auto"
+                      playsInline
+                      controls
+                      className="w-full rounded-2xl border border-gray-200 bg-black"
+                    />
+                    <div className="muted text-xs mt-2">
+                      Sur iPhone, la lecture doit être déclenchée par un clic (OK avec “Démarrer avec vidéo”).
+                    </div>
+                  </>
+                ) : (
+                  <div className="muted">
+                    Appuie sur “Démarrer avec vidéo” pour lancer la vidéo + le timer ensemble.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Boutons bas */}
-          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              className="btn-primary"
-              type="button"
-              onClick={startWithVideo}
-              disabled={!selectedVideo?.url}
-              title={!selectedVideo?.url ? "Choisis une vidéo" : ""}
-            >
-              Démarrer (avec vidéo)
-            </button>
-
-            <button className="btn-ghost" type="button" onClick={startTimerOnly}>
-              Démarrer seul
-            </button>
+          {/* Actions */}
+          <div className="leo-timer-actions mt-3">
+            {!running ? (
+              <>
+                <button
+                  className="btn-primary leo-cta-big"
+                  type="button"
+                  onClick={startWithVideo}
+                  disabled={!selectedVideo?.url}
+                  title={!selectedVideo?.url ? "Choisis une vidéo" : ""}
+                >
+                  Démarrer (avec vidéo) 🎬
+                </button>
+                <button className="btn-ghost leo-cta-big" type="button" onClick={startTimerOnly}>
+                  Démarrer seul 🪥
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn-primary leo-cta-big" type="button" onClick={() => stopAll()}>
+                  Stop ⏹️
+                </button>
+                <button className="btn-ghost leo-cta-big" type="button" onClick={reset}>
+                  Reset
+                </button>
+              </>
+            )}
           </div>
         </div>
 
-        {/* CSS Slider joli */}
         <style>{`
           .leo-range {
             --track: #e5e7eb;
@@ -327,6 +477,7 @@ export default function BrushingTimerModal({
             background: linear-gradient(to right, var(--fill) var(--p), var(--track) var(--p));
             outline: none;
           }
+          .leo-range--fun { --fill: rgba(29, 78, 216, 0.95); }
           .leo-range::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
